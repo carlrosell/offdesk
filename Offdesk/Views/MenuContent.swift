@@ -29,7 +29,7 @@ struct MenuContent: View {
                 NSApp.activate(ignoringOtherApps: true)
                 let window = NSApp.windows.first {
                     $0.identifier?.rawValue.contains(WindowID.preferences) == true
-                        || $0.title == "Clean Preferences"
+                        || $0.title == "Offdesk Preferences"
                 }
                 window?.makeKeyAndOrderFront(nil)
             }

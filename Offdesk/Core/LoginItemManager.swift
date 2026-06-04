@@ -3,6 +3,7 @@ import ServiceManagement
 
 /// Registers/unregisters the app as a login item via `SMAppService`, so cleaning
 /// can keep happening across reboots without the user re-launching it.
+@MainActor
 final class LoginItemManager {
     static let shared = LoginItemManager()
     private init() {}
@@ -26,7 +27,7 @@ final class LoginItemManager {
                 }
             }
         } catch {
-            NSLog("Clean: login item update failed: \(error.localizedDescription)")
+            NSLog("Offdesk: login item update failed: \(error.localizedDescription)")
         }
     }
 }

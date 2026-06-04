@@ -2,6 +2,7 @@ import Foundation
 
 /// Persists the most recent *non-empty* clean to Application Support so it can be
 /// undone and shown in the Status tab across launches.
+@MainActor
 final class CleanHistoryStore {
     static let shared = CleanHistoryStore()
 
@@ -11,7 +12,7 @@ final class CleanHistoryStore {
         let fm = FileManager.default
         let base = (try? fm.url(for: .applicationSupportDirectory, in: .userDomainMask,
                                 appropriateFor: nil, create: true)) ?? fm.temporaryDirectory
-        let dir = base.appendingPathComponent("Clean", isDirectory: true)
+        let dir = base.appendingPathComponent("Offdesk", isDirectory: true)
         try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
         fileURL = dir.appendingPathComponent("last-clean.json")
     }

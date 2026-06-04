@@ -4,6 +4,7 @@ import AppKit
 /// Fires a repeating action on the main run loop and also re-fires when the Mac
 /// wakes from sleep (timers don't fire reliably while asleep). The action decides
 /// whether a clean is actually due. Mirrors RINIK's "wake every 60 minutes" agent.
+@MainActor
 final class Scheduler {
     private let interval: TimeInterval
     private let action: () -> Void
@@ -23,7 +24,8 @@ final class Scheduler {
         stop()
 
         let timer = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
-            self?.fire()
+            // Added to RunLoop.main below, so the timer fires on the main actor.
+            MainActor.assumeIsolated { self?.fire() }
         }
         // .common so it keeps firing while menus are being tracked.
         RunLoop.main.add(timer, forMode: .common)
@@ -32,7 +34,8 @@ final class Scheduler {
         wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
         ) { [weak self] _ in
-            self?.fire()
+            // Delivered on the main queue (queue: .main), so we're on the main actor.
+            MainActor.assumeIsolated { self?.fire() }
         }
     }
 
@@ -49,5 +52,5 @@ final class Scheduler {
         action()
     }
 
-    deinit { stop() }
+    isolated deinit { stop() }
 }

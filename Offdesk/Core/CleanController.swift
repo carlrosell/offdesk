@@ -78,9 +78,12 @@ final class CleanController: ObservableObject {
                 skippedCount: result.skipped,
                 errorCount: result.errors.count
             )
-            for error in result.errors { NSLog("Clean: %@", error) }
+            for error in result.errors { NSLog("Offdesk: %@", error) }
             DispatchQueue.main.async {
-                self.finishClean(record: record, now: now)
+                // The block runs on the main queue, so we're safely on the main actor.
+                MainActor.assumeIsolated {
+                    self.finishClean(record: record, now: now)
+                }
             }
         }
     }
@@ -126,7 +129,7 @@ final class CleanController: ObservableObject {
                     try fm.moveItem(at: to, to: restoreURL)
                     emptiedDirs.insert(to.deletingLastPathComponent().path)
                 } catch {
-                    NSLog("Clean: undo failed for %@: %@", to.lastPathComponent, error.localizedDescription)
+                    NSLog("Offdesk: undo failed for %@: %@", to.lastPathComponent, error.localizedDescription)
                     unrestored.append(move)
                 }
             }
@@ -139,19 +142,23 @@ final class CleanController: ObservableObject {
                 }
             }
 
+            let finalUnrestored = unrestored
             DispatchQueue.main.async {
-                if unrestored.isEmpty {
-                    CleanHistoryStore.shared.clear()
-                    self.undoRecord = nil
-                } else {
-                    // Some items couldn't be moved back — keep a record of just those
-                    // so the user can retry "Undo last clean".
-                    var retry = record
-                    retry.moves = unrestored
-                    CleanHistoryStore.shared.save(retry)
-                    self.undoRecord = retry
+                // The block runs on the main queue, so we're safely on the main actor.
+                MainActor.assumeIsolated {
+                    if finalUnrestored.isEmpty {
+                        CleanHistoryStore.shared.clear()
+                        self.undoRecord = nil
+                    } else {
+                        // Some items couldn't be moved back — keep a record of just those
+                        // so the user can retry "Undo last clean".
+                        var retry = record
+                        retry.moves = finalUnrestored
+                        CleanHistoryStore.shared.save(retry)
+                        self.undoRecord = retry
+                    }
+                    self.isBusy = false
                 }
-                self.isBusy = false
             }
         }
     }

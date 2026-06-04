@@ -2,20 +2,20 @@ import SwiftUI
 import AppKit
 
 @main
-struct CleanApp: App {
+struct OffdeskApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var controller = CleanController.shared
     @StateObject private var settings = AppSettings.shared
 
     var body: some Scene {
-        MenuBarExtra("Clean", systemImage: "sparkles") {
+        MenuBarExtra("Offdesk", systemImage: "sparkles") {
             MenuContent()
                 .environmentObject(controller)
                 .environmentObject(settings)
         }
         .menuBarExtraStyle(.menu)
 
-        Window("Clean Preferences", id: WindowID.preferences) {
+        Window("Offdesk Preferences", id: WindowID.preferences) {
             PreferencesView()
                 .environmentObject(controller)
                 .environmentObject(settings)

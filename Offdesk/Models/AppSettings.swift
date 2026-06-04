@@ -5,6 +5,7 @@ import SwiftUI
 /// views update when values change. Property observers write through to defaults;
 /// note that Swift does not call `didSet` for the initial assignments in `init`,
 /// so loading from defaults does not redundantly write back.
+@MainActor
 final class AppSettings: ObservableObject {
     static let shared = AppSettings()
 
@@ -41,7 +42,7 @@ final class AppSettings: ObservableObject {
         let d = UserDefaults.standard
         let home = FileManager.default.homeDirectoryForCurrentUser
         destinationPath = d.string(forKey: Keys.destination)
-            ?? home.appendingPathComponent("Documents/Desktop Cleaner").path
+            ?? home.appendingPathComponent("Documents/Desktop").path
         sourcePaths = (d.array(forKey: Keys.sources) as? [String])
             ?? [home.appendingPathComponent("Desktop").path]
         grouping = Grouping(rawValue: d.string(forKey: Keys.grouping) ?? "") ?? .month

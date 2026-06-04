@@ -1,4 +1,4 @@
-# Clean
+# Offdesk
 
 A small macOS menu-bar app that tidies your Desktop on a schedule — moving files
 into a destination folder and grouping them into dated subfolders like
@@ -34,9 +34,9 @@ Three tabs matching the original — **Status**, **Settings**, **Info**.
 ## Project layout
 
 ```
-Clean.xcodeproj          # hand-authored, uses a synchronized file group
-Clean/
-  CleanApp.swift         # @main App: MenuBarExtra + preferences Window + AppDelegate
+Offdesk.xcodeproj        # hand-authored, uses a synchronized file group
+Offdesk/
+  OffdeskApp.swift       # @main App: MenuBarExtra + preferences Window + AppDelegate
   Models/
     AppSettings.swift    # UserDefaults-backed, observable settings
     Grouping.swift       # none / month / day + folder-name formatting
@@ -54,33 +54,33 @@ Clean/
 ```
 
 The Xcode project uses a `PBXFileSystemSynchronizedRootGroup`, so any file you add
-under `Clean/` is compiled automatically — no need to register it in the project.
+under `Offdesk/` is compiled automatically — no need to register it in the project.
 
 ## Build & run
 
 Open in Xcode:
 
 ```sh
-open Clean.xcodeproj
+open Offdesk.xcodeproj
 ```
 
-Then select the **Clean** scheme and press ⌘R. In **Signing & Capabilities**, pick
+Then select the **Offdesk** scheme and press ⌘R. In **Signing & Capabilities**, pick
 your team (automatic signing) the first time.
 
 From the command line:
 
 ```sh
 # Compile-check (no signing required)
-xcodebuild -project Clean.xcodeproj -scheme Clean -configuration Debug \
+xcodebuild -project Offdesk.xcodeproj -scheme Offdesk -configuration Debug \
   -destination 'generic/platform=macOS' CODE_SIGNING_ALLOWED=NO build
 
 # Build a signed, runnable app with your team
-xcodebuild -project Clean.xcodeproj -scheme Clean -configuration Release \
+xcodebuild -project Offdesk.xcodeproj -scheme Offdesk -configuration Release \
   DEVELOPMENT_TEAM=XXXXXXXXXX build
 ```
 
-The built `Clean.app` is under Xcode's DerivedData (`Build/Products/...`). For
-launch-at-login to work reliably, move `Clean.app` to `/Applications` and launch
+The built `Offdesk.app` is under Xcode's DerivedData (`Build/Products/...`). For
+launch-at-login to work reliably, move `Offdesk.app` to `/Applications` and launch
 it from there.
 
 ## Permissions
@@ -98,7 +98,7 @@ it from there.
 | Setting          | Default                          |
 |------------------|----------------------------------|
 | Source folder    | `~/Desktop`                      |
-| Destination      | `~/Documents/Desktop Cleaner`    |
+| Destination      | `~/Documents/Desktop`            |
 | Grouping         | Group by month                   |
 | Frequency        | Every day                        |
 | Skip labeled     | Off                              |
