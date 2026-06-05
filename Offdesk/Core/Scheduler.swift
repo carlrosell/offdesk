@@ -3,7 +3,7 @@ import AppKit
 
 /// Fires a repeating action on the main run loop and also re-fires when the Mac
 /// wakes from sleep (timers don't fire reliably while asleep). The action decides
-/// whether a clean is actually due. Mirrors RINIK's "wake every 60 minutes" agent.
+/// whether a clean is actually due.
 @MainActor
 final class Scheduler {
     private let interval: TimeInterval

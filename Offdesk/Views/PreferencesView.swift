@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The preferences window with Status / Settings / Info tabs, matching RINIK.
+/// The preferences window with Status / Settings / Info tabs.
 struct PreferencesView: View {
     var body: some View {
         TabView {

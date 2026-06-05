@@ -2,7 +2,7 @@
 
 A small macOS menu-bar app that tidies your Desktop on a schedule — moving files
 into a destination folder and grouping them into dated subfolders like
-`2026 June`. A modern, native Swift/SwiftUI successor to the deprecated **RINIK Clean**.
+`2026 June`. A modern, native Swift/SwiftUI menu-bar utility.
 
 ## What it does
 

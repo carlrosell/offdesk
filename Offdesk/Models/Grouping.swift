@@ -2,9 +2,8 @@ import Foundation
 
 /// How cleaned items are grouped into subfolders inside the destination.
 ///
-/// Grouping uses the *clean date* (the moment the clean runs), matching the
-/// original RINIK behaviour where each month's folder is created the first time
-/// a clean happens that month.
+/// Grouping uses the *clean date* (the moment the clean runs): each month's
+/// folder is created the first time a clean happens that month.
 enum Grouping: String, CaseIterable, Identifiable, Codable {
     case none
     case month

@@ -16,8 +16,8 @@ enum Frequency: String, CaseIterable, Identifiable, Codable {
 
     /// Whether a clean is due, given the last clean date.
     ///
-    /// Matches RINIK: with daily cleaning a clean is due once the calendar day
-    /// changes; with weekly cleaning it's due when the last clean is 7+ days old.
+    /// With daily cleaning a clean is due once the calendar day changes; with
+    /// weekly cleaning it's due when the last clean is 7+ days old.
     /// If the desktop has never been cleaned, a clean is always due.
     func shouldClean(lastClean: Date?, now: Date, calendar: Calendar = .current) -> Bool {
         guard let last = lastClean else { return true }

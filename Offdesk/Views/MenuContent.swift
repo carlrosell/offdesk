@@ -1,8 +1,8 @@
 import SwiftUI
 import AppKit
 
-/// The menu shown when clicking the menu-bar icon. Mirrors RINIK's menu, plus
-/// an "Undo last clean" item.
+/// The menu shown when clicking the menu-bar icon, including an
+/// "Undo last clean" item.
 struct MenuContent: View {
     @EnvironmentObject var controller: CleanController
     @EnvironmentObject var settings: AppSettings
