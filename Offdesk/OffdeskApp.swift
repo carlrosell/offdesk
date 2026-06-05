@@ -8,7 +8,7 @@ struct OffdeskApp: App {
     @StateObject private var settings = AppSettings.shared
 
     var body: some Scene {
-        MenuBarExtra("Offdesk", systemImage: "sparkles") {
+        MenuBarExtra("Offdesk", image: "MenuBarIcon") {
             MenuContent()
                 .environmentObject(controller)
                 .environmentObject(settings)
