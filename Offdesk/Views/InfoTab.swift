@@ -3,11 +3,6 @@ import SwiftUI
 struct InfoTab: View {
     var body: some View {
         VStack(spacing: 14) {
-            Image(systemName: "sparkles")
-                .font(.system(size: 40))
-                .foregroundStyle(.tint)
-                .padding(.top, 8)
-
             Text("Offdesk checks your source folders every 60 minutes. With daily cleaning it acts once the calendar day changes; with weekly cleaning it acts once 7 or more days have passed since the last clean.")
 
             Text("You can move everything into a single folder, or group cleaned items by month or by day — sorted into folders named like “2026 June”.")
@@ -20,7 +15,7 @@ struct InfoTab: View {
         }
         .multilineTextAlignment(.center)
         .padding(24)
-        .frame(width: 480, height: 280)
+        .frame(maxWidth: .infinity, minHeight: 280, maxHeight: .infinity, alignment: .top)
     }
 
     private var appVersion: String {
