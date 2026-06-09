@@ -4,6 +4,20 @@ A small macOS menu-bar app that tidies your Desktop on a schedule — moving fil
 into a destination folder and grouping them into dated subfolders like
 `2026 June`. A modern, native Swift/SwiftUI menu-bar utility.
 
+## Download
+
+Grab the latest `Offdesk.dmg` from the
+[**Releases**](https://github.com/carlrosell/offdesk/releases/latest) page, open
+it, and drag **Offdesk** into Applications. Builds are signed with Developer ID
+and notarized by Apple, so they open without Gatekeeper warnings.
+
+Offdesk keeps itself up to date via [Sparkle](https://sparkle-project.org): it
+checks for new versions in the background and offers them in place. You can also
+check any time from the menu bar or the **Info** tab → **Check for Updates…**.
+
+> Maintainers: see [RELEASING.md](RELEASING.md) for how releases are built,
+> signed, and published from a `v*` git tag.
+
 ## What it does
 
 - Lives in the menu bar (no Dock icon — it's an `LSUIElement` agent app).

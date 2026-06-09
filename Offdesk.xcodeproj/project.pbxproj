@@ -6,13 +6,30 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		E10000000000000000000021 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = E10000000000000000000020 /* Sparkle */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		E1000000000000000000000D /* Offdesk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Offdesk.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		E10000000000000000000023 /* Exceptions for "Offdesk" folder in "Offdesk" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = E1000000000000000000000F /* Offdesk */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		E1000000000000000000000E /* Offdesk */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				E10000000000000000000023 /* Exceptions for "Offdesk" folder in "Offdesk" target */,
+			);
 			path = Offdesk;
 			sourceTree = "<group>";
 		};
@@ -23,6 +40,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E10000000000000000000021 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +83,7 @@
 			);
 			name = Offdesk;
 			packageProductDependencies = (
+				E10000000000000000000020 /* Sparkle */,
 			);
 			productName = Offdesk;
 			productReference = E1000000000000000000000D /* Offdesk.app */;
@@ -94,6 +113,9 @@
 			);
 			mainGroup = E1000000000000000000000B;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				E10000000000000000000022 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = E1000000000000000000000C /* Products */;
 			projectDirPath = "";
@@ -136,6 +158,7 @@
 				DEVELOPMENT_TEAM = 8JSX675783;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Offdesk/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Offdesk;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
@@ -163,6 +186,7 @@
 				DEVELOPMENT_TEAM = 8JSX675783;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Offdesk/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Offdesk;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
@@ -318,6 +342,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		E10000000000000000000022 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.9.3;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		E10000000000000000000020 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E10000000000000000000022 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = E1000000000000000000000A /* Project object */;
 }

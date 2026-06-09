@@ -23,3 +23,14 @@ xcuserdata/
 
 # Misc
 *.swp
+
+# Distribution / signing material — never commit these
+*.p12
+AuthKey_*.p8
+sparkle_private_key
+*.dmg
+dist/
+
+# Python bytecode (scripts/)
+__pycache__/
+*.pyc

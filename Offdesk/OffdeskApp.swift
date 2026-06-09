@@ -6,12 +6,14 @@ struct OffdeskApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var controller = CleanController.shared
     @StateObject private var settings = AppSettings.shared
+    @StateObject private var updater = UpdaterViewModel()
 
     var body: some Scene {
         MenuBarExtra("Offdesk", image: "MenuBarIcon") {
             MenuContent()
                 .environmentObject(controller)
                 .environmentObject(settings)
+                .environmentObject(updater)
         }
         .menuBarExtraStyle(.menu)
 
@@ -19,6 +21,7 @@ struct OffdeskApp: App {
             PreferencesView()
                 .environmentObject(controller)
                 .environmentObject(settings)
+                .environmentObject(updater)
         }
         .windowResizability(.contentSize)
         .defaultLaunchBehavior(.suppressed)   // don't pop the window open at launch

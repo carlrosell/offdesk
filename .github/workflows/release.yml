@@ -1,0 +1,252 @@
+name: Release
+
+# Cut a release by pushing a version tag, e.g.:
+#   git tag v1.0.1 && git push origin v1.0.1
+#
+# The job builds Offdesk, signs it with Developer ID, notarizes + staples it,
+# packages a drag-to-Applications DMG, EdDSA-signs that DMG for Sparkle,
+# regenerates the cumulative appcast, and publishes the GitHub Release.
+#
+# Required repository secrets (see RELEASING.md):
+#   MACOS_CERTIFICATE       base64 of the Developer ID Application .p12
+#   MACOS_CERTIFICATE_PWD   password for that .p12
+#   APPLE_API_KEY           base64 of the App Store Connect API key (.p8)
+#   APPLE_API_KEY_ID        the API key's Key ID
+#   APPLE_API_ISSUER_ID     the API key's Issuer ID
+#   SPARKLE_PRIVATE_KEY     Sparkle EdDSA private key (from setup-sparkle-keys.sh)
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    # Xcode 26 is required (project objectVersion 77). The macos-15 image ships
+    # Xcode 26.x; bump this label if Apple moves the toolchain to a newer macOS.
+    runs-on: macos-15
+    env:
+      SCHEME: Offdesk
+      APP_NAME: Offdesk
+      TEAM_ID: "8JSX675783"
+      SPARKLE_VERSION: "2.9.3"
+      REPO: ${{ github.repository }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select latest stable Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Guard against placeholder Sparkle key
+        run: |
+          if grep -q "__SPARKLE_PUBLIC_KEY__" Offdesk/Info.plist; then
+            echo "::error::SUPublicEDKey is still the placeholder. Run scripts/setup-sparkle-keys.sh, commit Info.plist, then re-tag."
+            exit 1
+          fi
+
+      - name: Derive version from tag
+        id: ver
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          SHORT="${TAG#v}"
+          if [[ ! "$SHORT" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
+            echo "::error::Tag '$TAG' must look like v1.2 or v1.2.3"; exit 1
+          fi
+          IFS=. read -r MAJ MIN PAT <<< "$SHORT"
+          # CFBundleVersion derived from the semver tag so build order always
+          # tracks version order. Sparkle compares only CFBundleVersion and (in
+          # v2) refuses downgrades, so this must increase iff the version does.
+          # Run number won't do: it diverges on out-of-order tags and resets if
+          # the workflow is renamed. Assumes minor/patch < 1000.
+          BUILD=$(( MAJ * 1000000 + MIN * 1000 + ${PAT:-0} ))
+          {
+            echo "tag=$TAG"
+            echo "short=$SHORT"
+            echo "build=$BUILD"
+          } >> "$GITHUB_OUTPUT"
+          echo "Releasing $TAG  (short=$SHORT, build=$BUILD)"
+
+      - name: Import Developer ID certificate
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          KEYCHAIN_PWD="$(openssl rand -base64 24)"
+          CERT_PATH="$RUNNER_TEMP/cert.p12"
+
+          echo "$MACOS_CERTIFICATE" | base64 --decode > "$CERT_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -P "$MACOS_CERTIFICATE_PWD" \
+            -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PWD" "$KEYCHAIN_PATH" >/dev/null
+          # Search the temp keychain first, but keep the login keychain available.
+          security list-keychain -d user -s "$KEYCHAIN_PATH" login.keychain-db
+          rm -f "$CERT_PATH"
+
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH" \
+            | grep -q "Developer ID Application" \
+            || { echo "::error::No 'Developer ID Application' identity found in MACOS_CERTIFICATE."; exit 1; }
+
+      - name: Resolve Swift packages (locked to Package.resolved)
+        run: |
+          # Fail loudly if Package.resolved is missing/stale instead of silently
+          # floating Sparkle to a newer in-range version on a fresh checkout.
+          xcodebuild -resolvePackageDependencies \
+            -onlyUsePackageVersionsFromResolvedFile \
+            -project Offdesk.xcodeproj -scheme "$SCHEME"
+
+      - name: Archive (Developer ID, hardened runtime)
+        run: |
+          xcodebuild archive \
+            -project Offdesk.xcodeproj \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -destination "generic/platform=macOS" \
+            -archivePath "$RUNNER_TEMP/$APP_NAME.xcarchive" \
+            MARKETING_VERSION="${{ steps.ver.outputs.short }}" \
+            CURRENT_PROJECT_VERSION="${{ steps.ver.outputs.build }}" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Developer ID Application" \
+            DEVELOPMENT_TEAM="$TEAM_ID"
+
+      - name: Export signed app
+        timeout-minutes: 20
+        env:
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: |
+          KEY_PATH="$RUNNER_TEMP/AuthKey.p8"
+          echo "$APPLE_API_KEY" | base64 --decode > "$KEY_PATH"
+          # Pass App Store Connect API credentials so developer-id export does not
+          # fall back to an interactive Apple ID login, which hangs headlessly.
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/$APP_NAME.xcarchive" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist .github/ExportOptions.plist \
+            -authenticationKeyPath "$KEY_PATH" \
+            -authenticationKeyID "$APPLE_API_KEY_ID" \
+            -authenticationKeyIssuerID "$APPLE_API_ISSUER_ID"
+          rm -f "$KEY_PATH"
+          codesign --verify --deep --strict --verbose=2 "$RUNNER_TEMP/export/$APP_NAME.app"
+
+      - name: Notarize and staple the app
+        env:
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: |
+          KEY_PATH="$RUNNER_TEMP/AuthKey.p8"
+          echo "$APPLE_API_KEY" | base64 --decode > "$KEY_PATH"
+          ZIP="$RUNNER_TEMP/$APP_NAME.zip"
+          ditto -c -k --keepParent "$RUNNER_TEMP/export/$APP_NAME.app" "$ZIP"
+          xcrun notarytool submit "$ZIP" \
+            --key "$KEY_PATH" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER_ID" \
+            --wait
+          xcrun stapler staple "$RUNNER_TEMP/export/$APP_NAME.app"
+          rm -f "$KEY_PATH" "$ZIP"
+
+      - name: Build DMG
+        id: dmg
+        run: |
+          brew install create-dmg
+          DMG="$RUNNER_TEMP/$APP_NAME-${{ steps.ver.outputs.short }}.dmg"
+          STAGING="$RUNNER_TEMP/dmg-staging"
+          mkdir -p "$STAGING"
+          cp -R "$RUNNER_TEMP/export/$APP_NAME.app" "$STAGING/"
+          create-dmg \
+            --volname "$APP_NAME" \
+            --window-pos 200 120 \
+            --window-size 540 380 \
+            --icon-size 100 \
+            --icon "$APP_NAME.app" 140 190 \
+            --hide-extension "$APP_NAME.app" \
+            --app-drop-link 400 190 \
+            --codesign "Developer ID Application" \
+            --hdiutil-quiet \
+            "$DMG" "$STAGING"
+          {
+            echo "path=$DMG"
+            echo "name=$(basename "$DMG")"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Notarize and staple the DMG
+        env:
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: |
+          KEY_PATH="$RUNNER_TEMP/AuthKey.p8"
+          echo "$APPLE_API_KEY" | base64 --decode > "$KEY_PATH"
+          xcrun notarytool submit "${{ steps.dmg.outputs.path }}" \
+            --key "$KEY_PATH" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER_ID" \
+            --wait
+          xcrun stapler staple "${{ steps.dmg.outputs.path }}"
+          rm -f "$KEY_PATH"
+
+      - name: Download Sparkle tools
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/sparkle.tar.xz" \
+            "https://github.com/sparkle-project/Sparkle/releases/download/$SPARKLE_VERSION/Sparkle-$SPARKLE_VERSION.tar.xz"
+          mkdir -p "$RUNNER_TEMP/sparkle"
+          tar -xf "$RUNNER_TEMP/sparkle.tar.xz" -C "$RUNNER_TEMP/sparkle"
+
+      - name: Generate cumulative appcast
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          DMG="${{ steps.dmg.outputs.path }}"
+          # EdDSA-sign the DMG → `sparkle:edSignature="…" length="…"`
+          ENCLOSURE_ATTRS="$(echo "$SPARKLE_PRIVATE_KEY" \
+            | "$RUNNER_TEMP/sparkle/bin/sign_update" --ed-key-file - "$DMG")"
+          MIN_SYS="$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' \
+            "$RUNNER_TEMP/export/$APP_NAME.app/Contents/Info.plist")"
+          PUB_DATE="$(date -u '+%a, %d %b %Y %H:%M:%S +0000')"
+          URL="https://github.com/$REPO/releases/download/${{ steps.ver.outputs.tag }}/${{ steps.dmg.outputs.name }}"
+          NOTES="https://github.com/$REPO/releases/tag/${{ steps.ver.outputs.tag }}"
+
+          # Pull the previously published cumulative appcast (404 on first release).
+          PREV="$RUNNER_TEMP/prev_appcast.xml"
+          curl -fsSL -o "$PREV" "https://github.com/$REPO/releases/latest/download/appcast.xml" \
+            || { echo "No previous appcast (first release)"; rm -f "$PREV"; }
+
+          python3 scripts/build_appcast.py \
+            --version "${{ steps.ver.outputs.build }}" \
+            --short-version "${{ steps.ver.outputs.short }}" \
+            --url "$URL" \
+            --enclosure-attrs "$ENCLOSURE_ATTRS" \
+            --min-system "$MIN_SYS" \
+            --pub-date "$PUB_DATE" \
+            --notes-link "$NOTES" \
+            --previous "$PREV" \
+            --link "https://github.com/$REPO" \
+            --output "$RUNNER_TEMP/appcast.xml"
+          echo "----- appcast.xml -----"
+          cat "$RUNNER_TEMP/appcast.xml"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # --latest forces this release to be "latest" regardless of the tagged
+          # commit's date, so SUFeedURL (releases/latest/download/appcast.xml)
+          # always resolves to the newest release's cumulative appcast.
+          gh release create "${{ steps.ver.outputs.tag }}" \
+            --repo "$REPO" \
+            --title "$APP_NAME ${{ steps.ver.outputs.short }}" \
+            --latest \
+            --generate-notes \
+            "${{ steps.dmg.outputs.path }}" \
+            "$RUNNER_TEMP/appcast.xml"

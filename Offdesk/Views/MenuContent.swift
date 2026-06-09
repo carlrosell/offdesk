@@ -6,6 +6,7 @@ import AppKit
 struct MenuContent: View {
     @EnvironmentObject var controller: CleanController
     @EnvironmentObject var settings: AppSettings
+    @EnvironmentObject var updater: UpdaterViewModel
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
@@ -34,6 +35,11 @@ struct MenuContent: View {
                 window?.makeKeyAndOrderFront(nil)
             }
         }
+
+        Button("Check for Updates…") {
+            updater.checkForUpdates()
+        }
+        .disabled(!updater.canCheckForUpdates)
 
         Divider()
 
