@@ -25,9 +25,10 @@ permissions:
 
 jobs:
   release:
-    # Xcode 26 is required (project objectVersion 77). The macos-15 image ships
-    # Xcode 26.x; bump this label if Apple moves the toolchain to a newer macOS.
-    runs-on: macos-15
+    # macos-26 carries Xcode 26.5 (17F42), matching the toolchain that authored
+    # the Icon Composer app icon (Offdesk.icon). Older Xcode — e.g. 26.3, the
+    # newest on macos-15 — crashes in CompileAssetCatalogVariant on that asset.
+    runs-on: macos-26
     env:
       SCHEME: Offdesk
       APP_NAME: Offdesk
@@ -39,10 +40,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Select latest stable Xcode
+      - name: Select Xcode 26.5
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: latest-stable
+          xcode-version: "26.5"
 
       - name: Guard against placeholder Sparkle key
         run: |
